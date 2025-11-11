@@ -2,7 +2,9 @@
 
 A modern, feature-rich implementation of the classic Tetris game built with Python and Pygame.
 
-![Tetris Game Preview](preview.gif)
+<a href="preview.gif"><img src="preview.gif" alt="Tetris Game Preview" width="480" style="max-width:100%;height:auto" /></a>
+
+<!-- Change width="480" to the desired pixel width (or remove it and use CSS) -->
 
 ## ✨ Features
 
