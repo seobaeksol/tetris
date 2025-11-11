@@ -172,6 +172,7 @@ class Tetris:
     grid_rows: int = 20
     grid: list[list[int | tuple[int, int, int]]]
     current_piece: Tetromino | None = None
+    next_piece: Tetromino | None = None
     game_speed: int = 500  # milliseconds per drop
     score: int = 0
     level: int = 1
@@ -189,6 +190,12 @@ class Tetris:
 
         # Initialize the grid
         self.grid = [[0 for _ in range(self.grid_columns)] for _ in range(self.grid_rows)]
+
+        # Initialize the first pieces
+        random_tetromino = random.choice(TETROMINO_INFO)
+        self.next_piece = Tetromino(random_tetromino['shapes'], random_tetromino['color'])
+        random_tetromino = random.choice(TETROMINO_INFO)
+        self.current_piece = Tetromino(random_tetromino['shapes'], random_tetromino['color'])
 
     def update_display_size(self) -> None:
         screen_width, screen_height = self.screen.get_size()
@@ -212,7 +219,7 @@ class Tetris:
         self.panel_height = panel_height
         self.panel_start_y = vertical_center - panel_height // 2
         self.left_panel_start_x = horizontal_center - panel_width * 2
-        self.right_panel_start_x = horizontal_center + panel_width * 2
+        self.right_panel_start_x = horizontal_center + panel_width
         self.grid_start_x = horizontal_center - panel_width
         self.grid_width = panel_width * 2
         self.piece_size = self.grid_width // self.grid_columns  # Assuming 10 columns in the grid
@@ -294,10 +301,30 @@ class Tetris:
         self.screen.blit(level_text, (self.left_panel_start_x + 10, self.panel_start_y + 40))
         self.screen.blit(lines_text, (self.left_panel_start_x + 10, self.panel_start_y + 70))
 
+        # Draw next piece
+        if self.next_piece is not None:
+            next_text = font.render('Next:', True, (255, 255, 255))
+            self.screen.blit(next_text, (self.right_panel_start_x + 10, self.panel_start_y + 10))
+
+            for i, row in enumerate(self.next_piece.get_shape()):
+                for j, cell in enumerate(row):
+                    if cell == '0':
+                        pygame.draw.rect(
+                            self.screen,
+                            self.next_piece.color,
+                            (
+                                self.right_panel_start_x + 10 + j * self.piece_size,
+                                self.panel_start_y + 40 + i * self.piece_size,
+                                self.piece_size - 1,
+                                self.piece_size - 1
+                            )
+                        )
+
     def update(self) -> None:
         if self.current_piece is None:
             random_tetromino = random.choice(TETROMINO_INFO)
-            self.current_piece = Tetromino(random_tetromino['shapes'], random_tetromino['color'])
+            self.current_piece = self.next_piece
+            self.next_piece = Tetromino(random_tetromino['shapes'], random_tetromino['color'])
 
         # If the new piece cannot be placed, the game is over
         if not self.valid_move(0, 0):
@@ -307,7 +334,7 @@ class Tetris:
         if not self.valid_move(0, 1):
             # If the piece can't move down, it has landed
             self.lock_piece()
-        else:
+        elif self.current_piece is not None:
             # Move the piece down
             self.current_piece.position = (self.current_piece.position[0], self.current_piece.position[1] + 1)
 
