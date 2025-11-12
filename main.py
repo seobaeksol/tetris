@@ -6,8 +6,8 @@ TETROMINO_INFO = [
     {
         'shapes': [
             [
-                '..00.',
-                '..00.',
+                '00',
+                '00',
             ]
         ],
         'color': (255, 255, 0)
@@ -15,13 +15,30 @@ TETROMINO_INFO = [
     {
         'shapes': [
             [
-                '0000.',
+                '....',
+                '....',
+                '....',
+                '0000',
+                '....',
             ],
             [
-                '..0..',
-                '..0..',
-                '..0..',
-                '..0..'
+                '.0..',
+                '.0..',
+                '.0..',
+                '.0..'
+            ],
+            [
+                '....',
+                '....',
+                '....',
+                '0000',
+                '....',
+            ],
+            [
+                '..0.',
+                '..0.',
+                '..0.',
+                '..0.'
             ],
         ],
         'color': (0, 255, 255)
@@ -29,22 +46,24 @@ TETROMINO_INFO = [
     {
         'shapes': [
             [
-                '..0..',
-                '.000.',
+                '.0.',
+                '000',
+                '...',
             ],
             [
-                '..0..',
-                '..00.',
-                '..0..',
+                '.0.',
+                '.00',
+                '.0.',
             ],
             [
-                '.000.',
-                '..0..',
+                '...',
+                '000',
+                '.0.',
             ],
             [
-                '..0..',
-                '.00..',
-                '..0..',
+                '.0.',
+                '00.',
+                '.0.',
             ],
         ],
         'color': (255, 0, 255)
@@ -52,19 +71,25 @@ TETROMINO_INFO = [
     {
         'shapes': [
             [
+                '.....',
                 '..00.',
                 '.00..',
+                '.....',
             ],
             [
+                '.....',
                 '.0...',
                 '.00..',
                 '..0..',
             ],
             [
+                '.....',
                 '..00.',
                 '.00..',
+                '.....',
             ],
             [
+                '.....',
                 '.0...',
                 '.00..',
                 '..0..',
@@ -75,19 +100,25 @@ TETROMINO_INFO = [
     {
         'shapes': [
             [
+                '.....',
                 '.00..',
                 '..00.',
+                '.....',
             ],
             [
+                '.....',
                 '..0..',
                 '.00..',
                 '.0...',
             ],
             [
+                '.....',
                 '.00..',
                 '..00.',
+                '.....',
             ],
             [
+                '.....',
                 '...0.',
                 '..00.',
                 '..0..',
@@ -98,22 +129,32 @@ TETROMINO_INFO = [
     {
         'shapes': [
             [
-                '.0...',
-                '.0...',
-                '.00..',
-            ],
-            [
-                '.000.',
-                '.0...',
-            ],
-            [
+                '.....',
+                '..0..',
+                '..0..',
                 '..00.',
-                '...0.',
-                '...0.',
+                '.....',
             ],
             [
+                '.....',
+                '.....',
+                '.000.',
+                '.0...',
+                '.....',
+            ],
+            [
+                '.....',
+                '.00..',
+                '..0..',
+                '..0..',
+                '.....',
+            ],
+            [
+                '.....',
                 '...0.',
                 '.000.',
+                '.....',
+                '.....',
             ]
         ],
         'color': (255, 165, 0)
@@ -121,22 +162,32 @@ TETROMINO_INFO = [
     {
         'shapes': [
             [
-                '...0.',
-                '...0.',
-                '..00.',
-            ],
-            [
-                '.0...',
-                '.000.',
-            ],
-            [
+                '.....',
+                '..0..',
+                '..0..',
                 '.00..',
-                '.0...',
-                '.0...',
+                '.....',
             ],
             [
+                '.....',
+                '.0...',
+                '.000.',
+                '.....',
+                '.....',
+            ],
+            [
+                '.....',
+                '..00.',
+                '..0..',
+                '..0..',
+                '.....',
+            ],
+            [
+                '.....',
+                '.....',
                 '.000.',
                 '...0.',
+                '.....',
             ],
         ],
         'color': (0, 0, 255)
@@ -277,6 +328,24 @@ class Tetris:
                         return False
         return True
 
+    def rotate_piece(self) -> None:
+        """Rotate the current piece if possible"""
+        if self.current_piece is None:
+            return
+
+        original_rotation = self.current_piece.rotation
+        self.current_piece.rotate()
+        
+        if not self.valid_move(0, 0):
+            if self.current_piece.position[0] < 0:
+                self.current_piece.position = (0, self.current_piece.position[1])
+            elif self.current_piece.position[0] + len(self.current_piece.get_shape()[0]) > self.grid_columns:
+                self.current_piece.position = (self.grid_columns - len(self.current_piece.get_shape()[0]), self.current_piece.position[1])
+            
+        # If still not valid, revert rotation
+        if not self.valid_move(0, 0):
+            self.current_piece.rotation = original_rotation
+
     def lock_piece(self) -> None:
         """Lock the current piece into the grid"""
         if self.current_piece is None:
@@ -415,10 +484,7 @@ class Tetris:
                         continue
 
                     if event.key == pygame.K_UP:
-                        original_rotation = self.current_piece.rotation
-                        self.current_piece.rotate()
-                        if not self.valid_move(0, 0):
-                            self.current_piece.rotation = original_rotation
+                        self.rotate_piece()
                     elif event.key == pygame.K_SPACE:
                         while self.valid_move(0, 1):
                             self.current_piece.position = (self.current_piece.position[0], self.current_piece.position[1] + 1)
