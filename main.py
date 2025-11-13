@@ -243,7 +243,7 @@ class Tetris:
     shake_magnitude: int = 0
     shake_offset: tuple[int, int] = (0, 0)
 
-    def __init__(self, width = 400, height = 500) -> None:
+    def __init__(self, width = 600, height = 800) -> None:
         pygame.init()
         flags = pygame.RESIZABLE
         self.screen = pygame.display.set_mode((width, height), flags)
