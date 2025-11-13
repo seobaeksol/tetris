@@ -232,6 +232,9 @@ class Tetris:
     held_keys: dict[int, tuple[int, int]] = {}
     repeat_delay: int = 100  # milliseconds
     move_delay: int = 30  # milliseconds
+    shake_end_time: int = 0
+    shake_magnitude: int = 0
+    shake_offset: tuple[int, int] = (0, 0)
 
     def __init__(self, width = 400, height = 500) -> None:
         pygame.init()
@@ -250,6 +253,11 @@ class Tetris:
         random_tetromino = random.choice(TETROMINO_INFO)
         self.current_piece = Tetromino(random_tetromino['shapes'], random_tetromino['color'])
 
+        # Screen shake state
+        self.shake_end_time = 0        # timestamp (ms) when the shake should stop
+        self.shake_magnitude = 0       # maximum pixel offset during shake
+        self.shake_offset = (0, 0)     # current frame's offset (x, y)
+    
     def update_display_size(self) -> None:
         screen_width, screen_height = self.screen.get_size()
         screen_width = screen_width // 1
@@ -294,21 +302,26 @@ class Tetris:
         if screen_width < 400 or screen_height < 500:
             raise ValueError("Screen size must be at least 400x500")
 
+        # Use current shake offset when drawing
+        offset_x, offset_y = self.shake_offset
+
         # Fill the background with black
         self.screen.fill(self.bg_color)
 
         # Draw left panel
-        pygame.draw.rect(self.screen, self.left_panel_color, (horizontal_center - self.panel_width * 2, self.panel_start_y, self.panel_width, self.panel_height))
+        pygame.draw.rect(self.screen, self.left_panel_color, (horizontal_center - self.panel_width * 2 + offset_x, self.panel_start_y + offset_y, self.panel_width, self.panel_height))
 
         # Draw right panel
-        pygame.draw.rect(self.screen, self.right_panel_color, (horizontal_center + self.panel_width, self.panel_start_y, self.panel_width, self.panel_height))
+        pygame.draw.rect(self.screen, self.right_panel_color, (horizontal_center + self.panel_width + offset_x, self.panel_start_y + offset_y, self.panel_width, self.panel_height))
 
         # Draw grid area
-        pygame.draw.rect(self.screen, self.grid_color, (self.grid_start_x, self.panel_start_y, self.grid_width, self.panel_height))
+        pygame.draw.rect(self.screen, self.grid_color, (self.grid_start_x + offset_x, self.panel_start_y + offset_y, self.grid_width, self.panel_height))
         for i in range(self.grid_columns + 1):
-            pygame.draw.line(self.screen, self.grid_line_color, (self.grid_start_x + i * self.piece_size, self.panel_start_y), (self.grid_start_x + i * self.piece_size, self.panel_start_y + self.panel_height))
+            x = self.grid_start_x + i * self.piece_size + offset_x
+            pygame.draw.line(self.screen, self.grid_line_color, (x, self.panel_start_y + offset_y), (x, self.panel_start_y + self.panel_height + offset_y))
         for j in range(self.grid_rows + 1):
-            pygame.draw.line(self.screen, self.grid_line_color, (self.grid_start_x, j * self.piece_size + self.panel_start_y), (self.grid_start_x + self.grid_width, j * self.piece_size + self.panel_start_y))
+            y = self.panel_start_y + j * self.piece_size + offset_y
+            pygame.draw.line(self.screen, self.grid_line_color, (self.grid_start_x + offset_x, y), (self.grid_start_x + self.grid_width + offset_x, y))
 
     def valid_move(self, dx: int, dy: int) -> bool:
         """Check if the current piece can move by (dx, dy)"""
@@ -384,14 +397,16 @@ class Tetris:
         level_text = font.render(f'Level: {self.level}', True, (255, 255, 255))
         lines_text = font.render(f'Lines: {self.lines_cleared}', True, (255, 255, 255))
 
-        self.screen.blit(score_text, (self.left_panel_start_x + 10, self.panel_start_y + 10))
-        self.screen.blit(level_text, (self.left_panel_start_x + 10, self.panel_start_y + 40))
-        self.screen.blit(lines_text, (self.left_panel_start_x + 10, self.panel_start_y + 70))
+        offset_x, offset_y = self.shake_offset
+
+        self.screen.blit(score_text, (self.left_panel_start_x + 10 + offset_x, self.panel_start_y + 10 + offset_y))
+        self.screen.blit(level_text, (self.left_panel_start_x + 10 + offset_x, self.panel_start_y + 40 + offset_y))
+        self.screen.blit(lines_text, (self.left_panel_start_x + 10 + offset_x, self.panel_start_y + 70 + offset_y))
 
         # Draw next piece
         if self.next_piece is not None:
             next_text = font.render('Next:', True, (255, 255, 255))
-            self.screen.blit(next_text, (self.right_panel_start_x + 10, self.panel_start_y + 10))
+            self.screen.blit(next_text, (self.right_panel_start_x + 10 + offset_x, self.panel_start_y + 10 + offset_y))
 
             for i, row in enumerate(self.next_piece.get_shape()):
                 for j, cell in enumerate(row):
@@ -400,8 +415,8 @@ class Tetris:
                             self.screen,
                             self.next_piece.color,
                             (
-                                self.right_panel_start_x + 10 + j * self.piece_size,
-                                self.panel_start_y + 40 + i * self.piece_size,
+                                self.right_panel_start_x + 10 + j * self.piece_size + offset_x,
+                                self.panel_start_y + 40 + i * self.piece_size + offset_y,
                                 self.piece_size - 1,
                                 self.piece_size - 1
                             )
@@ -424,12 +439,20 @@ class Tetris:
             if all(cell != 0 for cell in row):
                 lines_to_clear.append(i)
         
-        combo_bonus = 0
-        for line in lines_to_clear:
-            del self.grid[line]
-            self.grid.insert(0, [0 for _ in range(self.grid_columns)])
-            combo_bonus += 1
-            self.score += 100 * combo_bonus
+        if lines_to_clear:
+            combo_bonus = 0
+            for line in lines_to_clear:
+                del self.grid[line]
+                self.grid.insert(0, [0 for _ in range(self.grid_columns)])
+                combo_bonus += 1
+                self.score += 100 * combo_bonus
+
+            # Trigger a screen shake for multi-line clears
+            if len(lines_to_clear) >= 1:
+                # duration grows slightly with more lines, magnitude scales but is clamped
+                duration = 300  # milliseconds
+                self.shake_magnitude = len(lines_to_clear)
+                self.shake_end_time = pygame.time.get_ticks() + duration
 
         self.lines_cleared += len(lines_to_clear)
         if self.lines_cleared >= 10 * self.level:
@@ -438,6 +461,7 @@ class Tetris:
             self.game_speed = max(100, self.game_speed - 50)
 
     def draw_grid(self) -> None:
+        offset_x, offset_y = self.shake_offset
         for y, row in enumerate(self.grid):
             for x, cell in enumerate(row):
                 if cell != 0:
@@ -445,8 +469,8 @@ class Tetris:
                         self.screen,
                         cell,
                         (
-                            self.grid_start_x + x * self.piece_size,
-                            y * self.piece_size + self.panel_start_y,
+                            self.grid_start_x + x * self.piece_size + offset_x,
+                            y * self.piece_size + self.panel_start_y + offset_y,
                             self.piece_size - 1,
                             self.piece_size - 1
                         )
@@ -462,8 +486,8 @@ class Tetris:
                             self.screen,
                             self.current_piece.color,
                             (
-                                self.grid_start_x + (x + j) * self.piece_size,
-                                (y + i) * self.piece_size + self.panel_start_y,
+                                self.grid_start_x + (x + j) * self.piece_size + offset_x,
+                                (y + i) * self.piece_size + self.panel_start_y + offset_y,
                                 self.piece_size - 1,
                                 self.piece_size - 1
                             )
@@ -472,6 +496,7 @@ class Tetris:
     def run(self) -> None:
         last_drop_time = pygame.time.get_ticks()
         last_move_time = pygame.time.get_ticks()
+        prev_frame_time = pygame.time.get_ticks()
         
         while True:
             for event in pygame.event.get():
@@ -527,6 +552,14 @@ class Tetris:
                             elif key == pygame.K_DOWN and self.valid_move(0, 1):
                                 self.current_piece.position = (self.current_piece.position[0], self.current_piece.position[1] + 1)
                                 self.held_keys[key] = (first_press_time, current_time)
+
+            # compute shake offset for this frame
+            current_time = pygame.time.get_ticks()
+            if current_time < self.shake_end_time:
+                m = self.shake_magnitude
+                self.shake_offset = (random.randint(-m, m), random.randint(-m, m))
+            else:
+                self.shake_offset = (0, 0)
 
             self.draw_background()
             current_time = pygame.time.get_ticks()
