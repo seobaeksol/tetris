@@ -104,11 +104,17 @@ TETROMINO_INFO = [
 ### Code Structure
 
 ```
-tetris/
+.
 ├── main.py              # Main game file
-├── README.md           # This file
-├── preview.gif         # Game preview
-└── pyrightconfig.toml  # Type checking configuration
+├── README.md            # This file
+├── preview.gif          # Game preview
+├── pyrightconfig.toml   # Type checking configuration
+└── assets/
+    └── sounds/
+        ├── bg.mp3
+        ├── bwah.wav
+        ├── fail.wav
+        └── hit1.wav
 ```
 
 ### Key Classes and Methods
@@ -123,7 +129,6 @@ tetris/
 
 Contributions are welcome! Here are some areas for potential improvement:
 
-- [ ] Add sound effects and background music
 - [ ] Implement different game modes (endless, sprint, etc.)
 - [ ] Add particle effects for line clears
 - [ ] Create AI opponent or demo mode
