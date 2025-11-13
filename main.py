@@ -418,13 +418,6 @@ class Tetris:
             self.is_game_over = True
             return
 
-        if not self.valid_move(0, 1):
-            # If the piece can't move down, it has landed
-            self.lock_piece()
-        elif self.current_piece is not None:
-            # Move the piece down
-            self.current_piece.position = (self.current_piece.position[0], self.current_piece.position[1] + 1)
-
         # Clear full lines
         lines_to_clear = []
         for i, row in enumerate(self.grid):
@@ -539,7 +532,14 @@ class Tetris:
             current_time = pygame.time.get_ticks()
             if current_time - last_drop_time > self.game_speed:
                 last_drop_time = current_time
-                self.update()
+                if not self.valid_move(0, 1):
+                    # If the piece can't move down, it has landed
+                    self.lock_piece()
+                elif self.current_piece is not None:
+                    # Move the piece down
+                    self.current_piece.position = (self.current_piece.position[0], self.current_piece.position[1] + 1)
+
+            self.update()
             self.draw_grid()
             self.draw_status()
 
