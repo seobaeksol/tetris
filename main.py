@@ -1,3 +1,4 @@
+from datetime import date, datetime
 import random
 import pygame
 
@@ -606,6 +607,14 @@ class Tetris:
                 self.screen.blit(game_over_text, text_rect)
                 pygame.mixer.music.fadeout(1000)
                 pygame.mixer.Sound("assets/sounds/fail.wav").play()
+
+                # Save score board
+                try:
+                    with open("score_board.txt", "a") as f:
+                        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        f.write(f"{now} {self.score}\n")
+                except Exception as e:
+                    print(f"Error saving score board: {e}")
 
             pygame.display.flip()
             self.clock.tick(60)
