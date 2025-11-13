@@ -3,6 +3,7 @@ import pygame
 
 # fmt: off
 TETROMINO_INFO = [
+    # O
     {
         'shapes': [
             [
@@ -10,8 +11,9 @@ TETROMINO_INFO = [
                 '00',
             ]
         ],
-        'color': (255, 255, 0)
+        'color': (0xfb, 0xe7, 0xa1)
     },
+    # I
     {
         'shapes': [
             [
@@ -41,8 +43,9 @@ TETROMINO_INFO = [
                 '..0.'
             ],
         ],
-        'color': (0, 255, 255)
+        'color': (0x7f, 0xd8, 0xbe)
     },
+    # T
     {
         'shapes': [
             [
@@ -66,8 +69,9 @@ TETROMINO_INFO = [
                 '.0.',
             ],
         ],
-        'color': (255, 0, 255)
+        'color': (0xbf, 0xa2, 0xdb)
     },
+    # S
     {
         'shapes': [
             [
@@ -95,8 +99,9 @@ TETROMINO_INFO = [
                 '..0..',
             ],
         ],
-        'color': (0, 255, 0)
+        'color': (0x81, 0xd4, 0xfa)
     },
+    # Z
     {
         'shapes': [
             [
@@ -124,8 +129,9 @@ TETROMINO_INFO = [
                 '..0..',
             ],
         ],
-        'color': (255, 165, 0)
+        'color': (0xf0, 0xcd, 0xd2)
     },
+    # L
     {
         'shapes': [
             [
@@ -157,8 +163,9 @@ TETROMINO_INFO = [
                 '.....',
             ]
         ],
-        'color': (255, 165, 0)
+        'color': (0xff, 0xbb, 0xd0)
     },
+    # J
     {
         'shapes': [
             [
@@ -190,7 +197,7 @@ TETROMINO_INFO = [
                 '.....',
             ],
         ],
-        'color': (0, 0, 255)
+        'color': (0x90, 0xca, 0xf9)
     },
 ]
 
@@ -217,8 +224,8 @@ class Tetris:
     bg_color: tuple[int, int, int] = (0, 0, 0)
     left_panel_color: tuple[int, int, int] = (50, 50, 50)
     right_panel_color: tuple[int, int, int] = (50, 50, 50)
-    grid_color: tuple[int, int, int] = (200, 200, 200)
-    grid_line_color: tuple[int, int, int] = (0, 0, 0)
+    grid_color: tuple[int, int, int] = (33, 33, 33)
+    grid_line_color: tuple[int, int, int] = (200, 200, 200)
     grid_columns: int = 10
     grid_rows: int = 20
     grid: list[list[int | tuple[int, int, int]]]
