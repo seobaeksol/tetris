@@ -301,6 +301,8 @@ class Tetris:
         self.lines_cleared = 0
         self.is_game_over = False
 
+        self.play_background_music()
+
     def draw_background(self) -> None:
         # Initialize values
         screen_width, screen_height = self.screen.get_size()
@@ -365,6 +367,8 @@ class Tetris:
 
         while self.valid_move(0, 1):
             self.current_piece.position = (self.current_piece.position[0], self.current_piece.position[1] + 1)
+
+        pygame.mixer.Sound("assets/sounds/hit1.wav").play()
 
     def rotate_piece(self) -> None:
         """Rotate the current piece if possible"""
@@ -439,7 +443,11 @@ class Tetris:
         if not self.valid_move(0, 0):
             self.is_game_over = True
             return
+        
+        self.clear_lines()
 
+    def clear_lines(self) -> None:
+        """Check for and clear full lines in the grid"""
         # Clear full lines
         lines_to_clear = []
         for i, row in enumerate(self.grid):
@@ -460,6 +468,7 @@ class Tetris:
                 duration = 300  # milliseconds
                 self.shake_magnitude = len(lines_to_clear)
                 self.shake_end_time = pygame.time.get_ticks() + duration
+                pygame.mixer.Sound("assets/sounds/bwah.wav").play()
 
         self.lines_cleared += len(lines_to_clear)
         if self.lines_cleared >= 10 * self.level:
@@ -500,11 +509,15 @@ class Tetris:
                             )
                         )
 
+    def play_background_music(self) -> None:
+        pygame.mixer.music.load("assets/sounds/bg.mp3")
+        pygame.mixer.music.play(-1)
+
     def run(self) -> None:
         last_drop_time = pygame.time.get_ticks()
         last_move_time = pygame.time.get_ticks()
         prev_frame_time = pygame.time.get_ticks()
-        
+        self.play_background_music()
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -560,6 +573,9 @@ class Tetris:
                                 self.current_piece.position = (self.current_piece.position[0], self.current_piece.position[1] + 1)
                                 self.held_keys[key] = (first_press_time, current_time)
 
+            if self.is_game_over:
+                continue
+
             # compute shake offset for this frame
             current_time = pygame.time.get_ticks()
             if current_time < self.shake_end_time:
@@ -588,6 +604,8 @@ class Tetris:
                 game_over_text = font.render('Game Over', True, (255, 0, 0))
                 text_rect = game_over_text.get_rect(center=(self.screen.get_width() // 2, self.screen.get_height() // 2))
                 self.screen.blit(game_over_text, text_rect)
+                pygame.mixer.music.fadeout(1000)
+                pygame.mixer.Sound("assets/sounds/fail.wav").play()
 
             pygame.display.flip()
             self.clock.tick(60)
