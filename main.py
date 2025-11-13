@@ -229,7 +229,9 @@ class Tetris:
     level: int = 1
     lines_cleared: int = 0
     is_game_over: bool = False
-    move_delay: int = 100  # milliseconds
+    held_keys: dict[int, tuple[int, int]] = {}
+    repeat_delay: int = 100  # milliseconds
+    move_delay: int = 30  # milliseconds
 
     def __init__(self, width = 400, height = 500) -> None:
         pygame.init()
@@ -327,6 +329,22 @@ class Tetris:
                     if self.grid[grid_y][grid_x] != 0:
                         return False
         return True
+    
+    def move_piece(self, dx: int, dy: int) -> None:
+        """Move the current piece by (dx, dy) if possible"""
+        if self.current_piece is None:
+            return
+
+        if self.valid_move(dx, dy):
+            self.current_piece.position = (self.current_piece.position[0] + dx, self.current_piece.position[1] + dy)
+
+    def drop_piece(self) -> None:
+        """Drop the current piece down until it lands"""
+        if self.current_piece is None:
+            return
+
+        while self.valid_move(0, 1):
+            self.current_piece.position = (self.current_piece.position[0], self.current_piece.position[1] + 1)
 
     def rotate_piece(self) -> None:
         """Rotate the current piece if possible"""
@@ -480,40 +498,43 @@ class Tetris:
 
                 # Handle single-press actions (rotation and hard drop)
                 if not self.is_game_over and event.type == pygame.KEYDOWN:
-                    if self.current_piece is None:
-                        continue
-
-                    if event.key == pygame.K_UP:
+                    now = pygame.time.get_ticks()
+                    if event.key == pygame.K_LEFT:
+                        self.move_piece(-1, 0)
+                        self.held_keys[pygame.K_LEFT] = (now, now)
+                    elif event.key == pygame.K_RIGHT:
+                        self.move_piece(1, 0)
+                        self.held_keys[pygame.K_RIGHT] = (now, now)
+                    elif event.key == pygame.K_DOWN:
+                        self.move_piece(0, 1)
+                        self.held_keys[pygame.K_DOWN] = (now, now)
+                    elif event.key == pygame.K_UP:
                         self.rotate_piece()
                     elif event.key == pygame.K_SPACE:
-                        while self.valid_move(0, 1):
-                            self.current_piece.position = (self.current_piece.position[0], self.current_piece.position[1] + 1)
+                        self.drop_piece()
                         self.lock_piece()
-
-            # Handle continuous movement while holding keys
+                
+                if event.type == pygame.KEYUP:
+                    if event.key in self.held_keys:
+                        del self.held_keys[event.key]
+            
+            # Handle held keys for continuous movement
             if not self.is_game_over and self.current_piece is not None:
                 current_time = pygame.time.get_ticks()
-                if current_time - last_move_time > self.move_delay:
-                    keys = pygame.key.get_pressed()
-                    moved = False
-                    
-                    if keys[pygame.K_LEFT]:
-                        if self.valid_move(-1, 0):
-                            self.current_piece.position = (self.current_piece.position[0] - 1, self.current_piece.position[1])
-                            moved = True
-                    elif keys[pygame.K_RIGHT]:
-                        if self.valid_move(1, 0):
-                            self.current_piece.position = (self.current_piece.position[0] + 1, self.current_piece.position[1])
-                            moved = True
-                    
-                    if keys[pygame.K_DOWN]:
-                        if self.valid_move(0, 1):
-                            self.current_piece.position = (self.current_piece.position[0], self.current_piece.position[1] + 1)
-                            moved = True
-                    
-                    if moved:
-                        last_move_time = current_time
                 
+                for key, (first_press_time, last_move_time_key) in list(self.held_keys.items()):
+                    if current_time - first_press_time > self.repeat_delay:
+                        if current_time - last_move_time_key > self.move_delay:
+                            if key == pygame.K_LEFT and self.valid_move(-1, 0):
+                                self.current_piece.position = (self.current_piece.position[0] - 1, self.current_piece.position[1])
+                                self.held_keys[key] = (first_press_time, current_time)
+                            elif key == pygame.K_RIGHT and self.valid_move(1, 0):
+                                self.current_piece.position = (self.current_piece.position[0] + 1, self.current_piece.position[1])
+                                self.held_keys[key] = (first_press_time, current_time)
+                            elif key == pygame.K_DOWN and self.valid_move(0, 1):
+                                self.current_piece.position = (self.current_piece.position[0], self.current_piece.position[1] + 1)
+                                self.held_keys[key] = (first_press_time, current_time)
+
             self.draw_background()
             current_time = pygame.time.get_ticks()
             if current_time - last_drop_time > self.game_speed:
